@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.lenovo.sensorfetch.sensorFetch">
+    <item
+        android:id="@+id/action"
+        android:title="stop"
+        app:showAsAction="always"
+        android:icon="@drawable/start"/>
+    <item
+        android:id="@+id/changeInterval"
+        android:title="change inerval"
+        app:showAsAction="always"
+        android:icon="@drawable/clock"/>
+
+</menu>
