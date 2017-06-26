@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#00BFFF</color>
+    <color name="colorPrimaryDark">#1E90FF</color>
+    <color name="colorAccent">#87CEFA</color>
+    <color name="Blue">#0000CD</color>
+    <color name="textColorPrimary">#FFFFFF</color>
+    <color name="skyblue">#87CEEB</color>
+    <color name="tranquose">	#40E0D0</color>
+    <color name="darkGrey">#696161</color>
+    <color name="windowBackGround">#9F9797</color>
+    <color name="darkerGrey">#4B4746</color>
+</resources>

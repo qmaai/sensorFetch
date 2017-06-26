@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:background="@color/darkGrey">
+
+    <ImageView
+        android:id="@+id/sensorImage"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="3"
+        android:contentDescription="fake image"
+        />
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_weight="6"
+        android:id="@+id/sensorName"
+        android:text="sensorName"
+        android:textColor="@color/textColorPrimary"
+        android:textAlignment="center"
+        android:layout_margin="6dp"
+        android:textSize="20sp"
+        android:layout_height="match_parent"
+        />
+    <CheckBox
+        android:id="@+id/sensorCheck"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:layout_marginLeft="20dp"
+        android:textSize="20sp"
+        android:clickable="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false" />
+    <!--
+    <chechBox
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="20dp"
+        android:textSize="20sp"
+        android:onClick="checkSensor"
+        tools:ignore="RtlHardcoded" />
+        -->
+</LinearLayout>

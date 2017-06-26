@@ -1,33 +1,28 @@
-package com.example.lenovo.sensorfetch;
+package com.example.elessar.myapplication;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static com.example.lenovo.sensorfetch.R.layout.content_sensor_fetch;
-
 /**
- * Created by lenovo on 2017/5/27.
+ * Created by elessar on 6/24/17.
  */
 
-public class CustomListAdpater extends SimpleAdapter {
+public class CustomListAdapter extends SimpleAdapter {
     Context context;
     LayoutInflater inflater;
     ArrayList<HashMap<String,String>> arrayListwithData;
     private HashMap<Integer,Boolean> isSelected;
 
-    public CustomListAdpater(Context context, ArrayList<HashMap<String, String>> data, int resource, String[] from, int[] to) {
+    public CustomListAdapter(Context context, ArrayList<HashMap<String, String>> data, int resource, String[] from, int[] to) {
         super(context, data, resource, from, to);
         this.arrayListwithData=data;
         this.context=context;
@@ -76,3 +71,4 @@ public class CustomListAdpater extends SimpleAdapter {
         return super.getCount();
     }
 }
+

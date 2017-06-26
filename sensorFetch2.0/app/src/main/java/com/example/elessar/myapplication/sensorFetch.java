@@ -1,20 +1,25 @@
-package com.example.lenovo.sensorfetch;
+package com.example.elessar.myapplication;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Bundle;
+import android.media.MediaScannerConnection;
+import android.preference.PreferenceManager;
+import android.support.constraint.solver.SolverVariable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,32 +33,42 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import static com.example.lenovo.sensorfetch.R.id.action;
+import static android.R.attr.action;
 
-public class sensorFetch extends AppCompatActivity implements SensorEventListener{
+public class sensorFetch extends AppCompatActivity implements SensorEventListener {
     private ListView sensorList;
     private SensorManager manager;
     private List<Sensor> availableSensors;
     private Field[] drawables;
     private final R.drawable drawableResources = new R.drawable();
-    private CustomListAdpater myAdapter;
+    private com.example.elessar.myapplication.CustomListAdapter myAdapter;
     private ArrayList<HashMap<String,String>> listForAdapter;
     private ArrayList<String> sensorNameList;
     private Calendar calendar;
-    private SimpleDateFormat format=new SimpleDateFormat("mmdd_HHMMSS");
+    private SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+    private SimpleDateFormat format_in_second=new SimpleDateFormat("HH:mm:ss.SSS");
     private HashMap<String,ArrayList<Object>> sensorFileHolder=new HashMap<String,ArrayList<Object>>();
     File root;
     File dir;
-    private int userTime=10000;
+    //private int userTime=10000;
     private FileWriter writer;
+    private String userName="default_name";
+    private Boolean clickable=true;
+    private int stepCounted=0;
     //private FileOutputStream outPutStream;
     private Button selectAll;
     private Button cancel;
     private Button reverseSelect;
+    private ArrayList<String> sensorPreferenceList;
+    private final String preferenceName="sensorPreference";
+    private final String preferenceListName="sensorPreferenceList";
 
     @Override
     //initialise the manager and the sensorList
@@ -70,17 +85,47 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
         manager=(SensorManager) getSystemService(SENSOR_SERVICE);
         availableSensors=manager.getSensorList(Sensor.TYPE_ALL);
 
+        SharedPreferences sensorPreference= this.getSharedPreferences(preferenceName,0);
+        sensorPreferenceList=new ArrayList<String>();
+
+        //load the preference set into an arrayList
+        Set<String> sensorPreferenceSet=sensorPreference.getStringSet(preferenceListName,
+                new HashSet<String>(Arrays.asList("step detector")));
+        for(String s:sensorPreferenceSet){
+            sensorPreferenceList.add(s);
+        }
+
         setUpListView();
         sensorList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if(clickable){
                     ViewHolder holder=(ViewHolder)view.getTag();
                     //改变checkBox 状态
                     holder.sensorChecked.toggle();
                     //记录状态
                     myAdapter.getIsSelected().put(position,holder.sensorChecked.isChecked());
+
+                    //update the array used for preference list
+                    if(!sensorPreferenceList.contains(((TextView)holder.sensorName).getText().toString())){
+                        sensorPreferenceList.add(((TextView)holder.sensorName).getText().toString());
+                    }
+                }
             }
         });
+
+        //get the sensors in the preference array toggled
+        ListView sensorListForPreference=(ListView)findViewById(R.id.sensorList);
+        for(String s:sensorPreferenceList){
+            ArrayList<HashMap<String,String>> customList=myAdapter.arrayListwithData;
+            for(HashMap<String,String> map:customList){
+                if(map.containsValue(s)){
+                    int sensorPosition=customList.indexOf(map);
+                    sensorListForPreference.performItemClick(myAdapter.getView(sensorPosition,null,null)
+                            ,sensorPosition,myAdapter.getItemId(sensorPosition));
+                }
+            }
+        }
 
         root=android.os.Environment.getExternalStorageDirectory();
         dir=new File(root.getAbsolutePath()+"/SensorFetch");
@@ -136,7 +181,7 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
         }
         String[] from={"name","image"};
         int[] to={R.id.sensorName,R.id.sensorImage};
-        myAdapter=new CustomListAdpater(this,listForAdapter,R.layout.sensor_each,from,to);
+        myAdapter=new CustomListAdapter(this,listForAdapter,R.layout.sensor_each,from,to);
         sensorList.setAdapter(myAdapter);
     }
     public ArrayList<String> retrievingAndMatchingDrawable(ArrayList<String> sensorNameList){
@@ -186,12 +231,12 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if(id==R.id.changeInterval){
+        /*if(id==R.id.changeInterval){
             //try to pop up an alert dialog with the help of inflater
             LayoutInflater inflater=LayoutInflater.from(sensorFetch.this);
             View clockView=inflater.inflate(R.layout.activity_set_clock,null);
             TextView textview=(TextView)clockView.findViewById(R.id.alertText);
-            textview.setText("sampling interval "+userTime+" to ");
+            textview.setText("please log in your name in Enlish");
             //use the builder to build
             AlertDialog.Builder builder=new AlertDialog.Builder(sensorFetch.this);
             builder.setView(clockView);
@@ -202,7 +247,8 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
                         public void onClick(DialogInterface dialog, int id) {
                             // get user input and set it to result
                             // edit text
-                            userTime=Integer.valueOf(userInput.getText().toString());
+                            //userTime=Integer.valueOf(userInput.getText().toString());
+                            userName=userInput.getText().toString();
                         }
                     })
                     .setNegativeButton("Cancel",new DialogInterface.OnClickListener() {
@@ -212,21 +258,26 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
                     });
             AlertDialog dialog=builder.create();
             dialog.show();
-        }
-        if(id== action){
+        }*/
+        if(id== R.id.action){
             if(item.getTitle().equals("stop")){
-                Toast.makeText(this,"start recording",Toast.LENGTH_SHORT).show();
-                item.setIcon(R.drawable.stop);
-                item.setTitle("record");
-                try {
-                    startRecordingData();
-                } catch (IOException e) {
-                    e.printStackTrace();
+
+                //write the sensor in the array into preference
+                SharedPreferences preference=this.getSharedPreferences(preferenceName,0);
+                SharedPreferences.Editor editor=preference.edit();
+                Set<String> stringSet=new HashSet<String>();
+                for(String s:sensorPreferenceList){
+                    stringSet.add(s);
                 }
+                editor.putStringSet(preferenceListName,stringSet);
+                editor.commit();
+
+                LoginUserName(item);
             }else if(item.getTitle().equals("record")){
                 Toast.makeText(this,"stop",Toast.LENGTH_SHORT).show();
                 item.setIcon(R.drawable.start);
                 item.setTitle("stop");
+                clickable=true;
                 try {
                     stopRecordingData();
                 } catch (IOException e) {
@@ -241,44 +292,119 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        userTime=data.getExtras().getInt("period");
+        //userTime=data.getExtras().getInt("period");
+    }
+    private void startConfirmation(){
+        //inflate the view
+        LayoutInflater inflater=LayoutInflater.from(sensorFetch.this);
+        View confirmationView=inflater.inflate(R.layout.confirmation,null);
+        TextView confirmationTextView=(TextView)confirmationView.findViewById(R.id.confirmation);
+        if(stepCounted!=0){
+            confirmationTextView.setText("you have walked "+stepCounted+" steps"+". All recorded");
+        }
+        else{
+            confirmationTextView.setText("Data is not recorded!");
+        }
+        //use the builder to build
+        AlertDialog.Builder builder=new AlertDialog.Builder(sensorFetch.this);
+        builder.setView(confirmationView);
+        AlertDialog dialog=builder.create();
+        dialog.show();
+        stepCounted=0;
     }
 
     private void stopRecordingData() throws IOException {
         manager.unregisterListener(this);
         writer.close();
+        startConfirmation();
+    }
+    private void LoginUserName(final MenuItem item){
+        LayoutInflater inflater=LayoutInflater.from(sensorFetch.this);
+        View clockView=inflater.inflate(R.layout.activity_set_clock,null);
+        TextView textview=(TextView)clockView.findViewById(R.id.alertText);
+        textview.setText(" please log in your name ");
+        final EditText userInput=(EditText)clockView.findViewById(R.id.editTextDialogUserInput);
+        userInput.setHint(userName);
+        userInput.setHintTextColor(getResources().getColor(R.color.textColorPrimary));
+        //use the builder to build
+        AlertDialog.Builder builder=new AlertDialog.Builder(sensorFetch.this);
+        builder.setView(clockView);
+        //set dialog message
+        builder.setCancelable(false)
+                .setPositiveButton("OK",new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // get user input and set it to result
+                        // edit text
+                        //userTime=Integer.valueOf(userInput.getText().toString());
+                        String inputName=userInput.getText().toString();
+                        userName=(inputName.equals("")?userName:inputName).toUpperCase();
+                        Toast.makeText(sensorFetch.this,"start recording",Toast.LENGTH_SHORT).show();
+                        item.setIcon(R.drawable.stop);
+                        item.setTitle("record");
+                        clickable=false;
+                        try {
+                            startRecordingData();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel",new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog dialog=builder.create();
+        dialog.show();
     }
     private void startRecordingData() throws IOException {
         //first get the sensors that should be recorded.
         for(int i=0;i<sensorNameList.size();i++){
             if(myAdapter.getIsSelected().get(i)){
-                manager.registerListener(this,availableSensors.get(i),userTime);
+                manager.registerListener(this,availableSensors.get(i),SensorManager.SENSOR_DELAY_NORMAL);
             }
         }
-        File file=new File(dir,format.format(Calendar.getInstance().getTime())+".csv");
+        File participant_dir=new File(dir.getAbsolutePath()+"/"+userName);
+        participant_dir.mkdir();
+
+        File file=new File(participant_dir,format.format(Calendar.getInstance().getTime())+"_"+userName+".csv");
         writer=new FileWriter(file);
+
+        MediaScannerConnection.scanFile(this, new String[] {file.toString()}, null, null);
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
         if(event.sensor!=null){
+            //for observing how long is the file
+            //String logContent=event.sensor.toString()+" ,"+event.values.length+" , "+event.values;
+            //Log.e("TAG",logContent);
+
             String entry=buildEntry(event);
-            int position=sensorNameList.indexOf(event.sensor.getName().toLowerCase());
-            if(myAdapter.getIsSelected().get(position)){
-                if(writer!=null){
-                    try {
-                        writer.write(entry);
-                        writer.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            if(event.sensor.getType()==Sensor.TYPE_SIGNIFICANT_MOTION){
+                manager.registerListener(this,manager.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION)
+                        ,SensorManager.SENSOR_DELAY_NORMAL);
+            }
+            if(event.sensor.getType()!=Sensor.TYPE_STEP_DETECTOR){
+                int position=sensorNameList.indexOf(event.sensor.getName().toLowerCase());
+                if(myAdapter.getIsSelected().get(position)){
+                    if(writer!=null){
+                        try {
+                            writer.write(entry);
+                            writer.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
+                        Log.e("ERROR","the fileWriter is null");
                     }
                 }
                 else{
-                    Log.e("ERROR","the fileWriter is null");
+                    Log.e("ERROR","the sensor is not registered");
                 }
-            }
-            else{
-                Log.e("ERROR","the sensor is not registered");
+            }else{
+                stepCounted++;
             }
         }else{
             Log.e("ERROR","the event is null");
@@ -286,10 +412,12 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
     }
 
     private String buildEntry(SensorEvent event) {
-        String time=format.format(Calendar.getInstance().getTime())+",";
+        String time=format_in_second.format(Calendar.getInstance().getTime())+",";
         String sensorValue=event.sensor.getName()+",";
         for(float f:event.values){
-            sensorValue+=f+",";
+            if(Math.signum(f)!=0){
+                sensorValue+=f+",";
+            }
         }
         return time+sensorValue+"\n";
     }
@@ -356,3 +484,4 @@ public class sensorFetch extends AppCompatActivity implements SensorEventListene
         return file;
     }*/
 }
+
